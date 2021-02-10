@@ -26,12 +26,10 @@ steps:
   displayName: 'Config git user'
 
 - script: |
-    cd CoreBanking
     mvn compile -B
   displayName: 'Build CoreBanking'
 
 - script: |
-    cd CoreBanking
     mkdir dcover
     cd dcover
     wget -c "$(RELEASE_URL)" -O dcover.zip -q
@@ -39,13 +37,11 @@ steps:
   displayName: 'Get Dcover'
 
 - script: |
-    cd CoreBanking
     dcover/dcover create --batch --exclude io.diffblue.corebanking.ui.menu.ClientsMenu.executeMenuOption
   displayName: 'Generate tests'
 
 - script: |
     NEW_BRANCH="$(BRANCH_PREFIX)/$(date +'%y%m%d%H%M')"
-    cd CoreBanking
     git fetch origin
     git checkout -b "$NEW_BRANCH"
     git branch
