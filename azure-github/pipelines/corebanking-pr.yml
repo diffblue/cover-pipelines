@@ -8,9 +8,9 @@ pr:
 
 variables:
 - name: COMMENT_ID
-  value: "<b><u>Diffblue Cover:</u></b> $(git show -s --format=%s)"
+  value: "<b><u>Diffblue Cover:</u></b> $(git show -s --format=%s)" # An ID user for the script that add a comment to the PRs
 - name: COMMENT_SCRIPT_LOCATION
-  value: "$(realpath azure-pipelines/scripts/addComment.py)"
+  value: "$(realpath azure-pipelines/scripts/addComment.py)" # A path to the example script for commenting on PRs
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -28,12 +28,12 @@ jobs:
 
   - script: |
       git config --global pull.ff only
-      git config --global user.email "db-ci-platform@diffblue.com"
+      git config --global user.email "db-ci-platform@diffblue.com" # Configure git user to be a Diffblue Bot (When making commits, this does not affect comments)
       git config --global user.name "Diffblue CI"
     displayName: 'Config git user'
 
   - script: |
-      python3 $(COMMENT_SCRIPT_LOCATION) \
+      python3 $(COMMENT_SCRIPT_LOCATION) \ # An example script that will comment on a PR
       --token $(GH_DB_TOKEN) \
       --pr_number $(System.PullRequest.PullRequestNumber) \
       --comment_id "$(COMMENT_ID)" \
@@ -42,7 +42,7 @@ jobs:
     displayName: 'Comment on PR (Tests started)'
 
   - script: |
-      mvn clean test -B
+      mvn clean test -B # Replace this with a command to run Diffblue tests only on your project
     displayName: 'Run tests'
 
   - script: |
@@ -87,7 +87,7 @@ jobs:
     displayName: 'Config git user'
 
   - script: |
-      LAST_NON_BOT_COMMIT="$(git rev-list -1 --author='^(?!Diffblue CI).*$' --perl-regexp HEAD --no-merges)"
+      LAST_NON_BOT_COMMIT="$(git rev-list -1 --author='^(?!Diffblue CI).*$' --perl-regexp HEAD --no-merges)" # Checks if the last commit can from the bot (If we do not check this and there is some non-determinism in dcover then this creates an infinite CI loop)
       echo "Last non bot commit is $LAST_NON_BOT_COMMIT"
       LAST_COMMIT="$(git rev-list HEAD -1 --no-merges)"
       echo "Last commit is $LAST_COMMIT"
@@ -110,22 +110,22 @@ jobs:
     condition: eq(variables.last_bot_commit, 0)
 
   - script: |
-      mvn compile -B
+      mvn compile -B # Replace with the commands needed to buiold your project
     displayName: 'Build CoreBanking'
     condition: eq(variables.last_bot_commit, 0)
 
   - script: |
       mkdir dcover
       cd dcover
-      wget -c "$(RELEASE_URL)" -O dcover.zip -q
+      wget -c "$(RELEASE_URL)" -O dcover.zip -q # Download Dcover from a secure URL
       unzip dcover.zip
     displayName: 'Get Dcover'
     condition: eq(variables.last_bot_commit, 0)
 
   - script: |
-      git diff origin/"$(System.PullRequest.TargetBranch)" > DiffblueTests.patch
+      git diff origin/"$(System.PullRequest.TargetBranch)" > DiffblueTests.patch # Create a patch fie for all chnages in this PR
       PATCH_FILE=$(realpath DiffblueTests.patch)
-      dcover/dcover create --batch --patch-only $PATCH_FILE --exclude io.diffblue.corebanking.ui.menu.ClientsMenu.executeMenuOption
+      dcover/dcover create --batch --patch-only $PATCH_FILE --exclude io.diffblue.corebanking.ui.menu.ClientsMenu.executeMenuOption # Use the patch file to only regenerate tests for code that has changed or code that is dependant on code that has changed
     displayName: 'Generate tests'
     condition: eq(variables.last_bot_commit, 0)
 
