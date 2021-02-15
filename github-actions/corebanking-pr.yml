@@ -1,0 +1,183 @@
+name: CoreBanking
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [corebanking-demo/**]
+
+env:
+  COMMENT_ID: "<b><u>Diffblue Cover:</u></b> $(git show -s --format=%s)"
+
+jobs:
+  run-diffblue-tests:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      # Cancel any previous runs
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.5.0
+        with:
+          access_token: ${{ secrets.GH_DB_TOKEN }}
+
+      - name: Checkout this branch
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GH_DB_TOKEN }}
+
+      - name: Config git
+        run: |
+          git fetch origin
+          git checkout ${{ github.head_ref }}
+          git config --global pull.ff only
+          git config --global user.email "db-ci-platform@diffblue.com"
+          git config --global user.name "Diffblue CI"
+          sleep 4
+      
+      - name: Find pull request number
+        uses: juliangruber/find-pull-request-action@v1.0.2
+        id: find-pull-request
+        with:
+          github-token: ${{ secrets.GH_DB_TOKEN }}
+          branch: "${{ github.head_ref }}"
+
+      - name: Export pull request number
+        run: echo "Pull Request ${number} (${sha})"
+        env:
+          number: ${{ steps.find-pull-request.outputs.number }}
+          sha: ${{ steps.find-pull-request.outputs.head-sha }}
+
+      - name: Comment on PR (Tests started)
+        run: |
+          python3 .github/workflows/addComment.py \
+          --token ${{ secrets.GH_DB_TOKEN }} \
+          --pr_number ${{ steps.find-pull-request.outputs.number }} \
+          --comment_id "${{ env.COMMENT_ID }}" \
+          --line_tag "<TESTS>" \
+          --message "<b>Baseline Tests Status:</b> Running Tests :hourglass_flowing_sand:"
+
+      - name: Run tests
+        run: |
+          mvn clean test -B
+
+      - name: Comment on PR (Tests Pass)
+        if: success()
+        run: |
+          python3 .github/workflows/addComment.py \
+          --token ${{ secrets.GH_DB_TOKEN }} \
+          --pr_number ${{ steps.find-pull-request.outputs.number }} \
+          --comment_id "${{ env.COMMENT_ID }}" \
+          --line_tag "<TESTS>" \
+          --message "<b>Baseline Tests Status:</b> Existing Tests Pass :heavy_check_mark:" 
+
+      - name: Comment on PR (Tests Fail)
+        if: failure()
+        run: |
+          python3 .github/workflows/addComment.py \
+          --token ${{ secrets.GH_DB_TOKEN }} \
+          --pr_number ${{ steps.find-pull-request.outputs.number }} \
+          --comment_id "${{ env.COMMENT_ID }}" \
+          --line_tag "<TESTS>" \
+          --message "<b>Baseline Tests Status:</b> Existing Tests Fail :x:"
+
+  
+  update-diffblue-tests:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      # Cancel any previous runs
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.5.0
+        with:
+          access_token: ${{ secrets.GH_DB_TOKEN }}
+
+      - name: Checkout this branch
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GH_DB_TOKEN }}
+      
+      - name: Config git
+        run: |
+          git fetch origin
+          git checkout ${{ github.head_ref }}
+          git config --global pull.ff only
+          git config --global user.email "db-ci-platform@diffblue.com"
+          git config --global user.name "Diffblue CI"
+
+      - name: Find pull request number
+        uses: juliangruber/find-pull-request-action@v1.0.2
+        id: find-pull-request
+        with:
+          github-token: ${{ secrets.GH_DB_TOKEN }}
+          branch: "${{ github.head_ref }}"
+ 
+      - name: Check if last commit was bot commit
+        id: check-bot-commit
+        run: |
+          LAST_NON_BOT_COMMIT="$(git rev-list -1 --author='^(?!Diffblue CI).*$' --perl-regexp HEAD --no-merges)"
+          echo "Last non bot commit is $LAST_NON_BOT_COMMIT"
+          LAST_COMMIT="$(git rev-list HEAD -1 --no-merges)"
+          echo "Last commit is $LAST_COMMIT"
+          if [[ "$LAST_NON_BOT_COMMIT" == "$LAST_COMMIT" ]]
+          then
+            echo "::set-output name=last-bot-commit::0"
+          else
+            echo "::set-output name=last-bot-commit::1"
+          fi
+
+      # Leave a comment on PR about Diffblue tests being generated
+      - name: Comment on PR (First run)
+        if: steps.check-bot-commit.outputs.last-bot-commit == 0
+        run: |
+          python3 .github/workflows/addComment.py \
+          --token ${{ secrets.GH_DB_TOKEN }} \
+          --pr_number ${{ steps.find-pull-request.outputs.number }} \
+          --comment_id "${{ env.COMMENT_ID }}" \
+          --line_tag "<TEST-GEN>" \
+          --message "<b>Test Generation Status:</b> Diffblue Cover is generating tests for this pull request :hourglass_flowing_sand:"
+
+      - name: Build CoreBanking
+        if: steps.check-bot-commit.outputs.last-bot-commit == 0
+        run: |
+          mvn compile -B
+
+      - name: Get Dcover
+        if: steps.check-bot-commit.outputs.last-bot-commit == 0
+        run: |
+          mkdir dcover
+          cd dcover
+          wget -c "${{ secrets.RELEASE_URL }}" -O dcover.zip -q
+          unzip dcover.zip
+
+      - name: Generate tests
+        if: steps.check-bot-commit.outputs.last-bot-commit == 0
+        run: |
+          git diff origin/"${{github.base_ref}}" > DiffblueTests.patch
+          PATCH_FILE=$(realpath DiffblueTests.patch)
+          dcover/dcover create --batch --patch-only $PATCH_FILE --exclude io.diffblue.corebanking.ui.menu.ClientsMenu.executeMenuOption
+
+      - name: Commit Changes
+        if: steps.check-bot-commit.outputs.last-bot-commit == 0
+        run: |
+          git add src/test/java
+          if ! git diff --quiet --cached src/test/java
+          then
+            python3 .github/workflows/addComment.py \
+              --token ${{ secrets.GH_DB_TOKEN }} \
+              --pr_number ${{ steps.find-pull-request.outputs.number }} \
+              --comment_id "${{ env.COMMENT_ID }}" \
+              --line_tag "<TEST-GEN>" \
+              --message "<b>Test Generation Status:</b> Diffblue has pushed a commit to your PR with the updated unit tests :heavy_check_mark: <i>Please inspect the test diff to determine of the behaviour change is as expected</i>"
+
+            git commit -m "Update Diffblue Tests"
+            git push
+            echo "::set-output name=RESULTS_CHANGES::1"
+          else
+            python3 .github/workflows/addComment.py \
+              --token ${{ secrets.GH_DB_TOKEN }} \
+              --pr_number ${{ steps.find-pull-request.outputs.number }} \
+              --comment_id "${{ env.COMMENT_ID }}" \
+              --line_tag "<TEST-GEN>" \
+              --message "<b>Test Generation Status:</b> Diffblue has finished analysing your pull request but deteced no changes :heavy_check_mark:"
+
+            echo "Nothing to commit"
+            echo "::set-output name=RESULTS_CHANGES::0"
+          fi

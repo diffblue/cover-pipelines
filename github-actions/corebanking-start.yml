@@ -1,0 +1,60 @@
+name: Create CoreBanking baseline tests
+on:
+  workflow_dispatch:
+
+env:
+  BRANCH_PREFIX: corebanking-demo
+
+jobs:
+  generate-tests:
+    runs-on: ubuntu-latest
+    steps:
+      # Cancel any previous runs
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.5.0
+        with:
+          access_token: ${{ secrets.GH_DB_TOKEN }}
+
+      - name: Checkout this branch
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GH_DB_TOKEN }}
+
+      - name: Config git user
+        run: |
+          git config --global pull.ff only
+          git config --global user.email "db-ci-platform@diffblue.com"
+          git config --global user.name "Diffblue CI" 
+
+      - name: Build CoreBanking
+        run: |
+          mvn compile -B
+
+      - name: Get Dcover
+        run: |
+          mkdir dcover
+          cd dcover
+          wget -c "${{ secrets.RELEASE_URL }}" -O dcover.zip -q
+          unzip dcover.zip
+
+      - name: Generate tests
+        run: |
+          dcover/dcover create --batch --exclude io.diffblue.corebanking.ui.menu.ClientsMenu.executeMenuOption
+
+      - name: Commit Changes
+        run: |
+          NEW_BRANCH="${{ env.BRANCH_PREFIX }}/$(date +'%y%m%d%H%M')"
+          echo "NEW_BRANCH=$NEW_BRANCH" >> $GITHUB_ENV
+
+          git fetch origin
+          git checkout -b "$NEW_BRANCH"
+          git add src/test/java
+          if ! git diff --quiet --cached src/test/java
+          then
+            git commit -m "Generate baseline Diffblue Tests"
+            git push origin "$NEW_BRANCH"
+            echo "::set-output name=RESULTS_CHANGES::1"
+          else
+            echo "Nothing to commit"
+            echo "::set-output name=RESULTS_CHANGES::0"
+          fi
