@@ -1,2 +1,4 @@
 # Cover Pipelines
-A collection of CI pipelines to be used as an example on the [Corebanking repo](https://github.com/diffblue/CoreBanking)
+An example of the Diffblue Cover CI Pipeline using Jenkins, Github and Maven on a multi-module project.
+
+See the documentation at https://docs.diffblue.com/knowledge-base/cli/adding-dcover-to-a-ci-pipeline

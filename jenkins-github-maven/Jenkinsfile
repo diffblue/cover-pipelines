@@ -1,0 +1,226 @@
+@NonCPS
+def cancelPreviousBuilds() {
+    def jobName = env.JOB_NAME
+    def buildNumber = env.BUILD_NUMBER.toInteger()
+    def currentJob = Jenkins.instance.getItemByFullName(jobName)
+    println("This is: Job name #${jobName}, Build number #${buildNumber}, Current job #${currentJob}")
+
+    for(def build : currentJob.builds) {
+        println("Checking build #${build}")
+        def exec = build.getExecutor()
+        if(build.isBuilding() && build.number.toInteger() < buildNumber && exec != null) {
+            exec.interrupt(Result.ABORTED, new CauseOfInterruption.UserInterruption("Job aborted by later build #${buildNumber}"))
+            println("This build #${buildNumber} stopped build #${build}")
+        }
+    }
+}
+
+pipeline {
+    agent any
+
+    /*
+    This is here so that if the user tests fail, we don't keep analysing with Diffblue
+    before failing the job
+    */
+    options {
+        parallelsAlwaysFailFast()
+    }
+
+    /*
+    Modify these as required
+    */
+    environment {
+       // Key for Github from credentials set up on Jenkins server
+       SSH_KEY = credentials('SSH_KEY_PIGGYMETRICS')
+       // Token for the dedicated Diffblue bot
+       TOKEN = credentials('DB_CI_PLATFORM_TOKEN')
+       // Probably no need to modify this, but this should be unique per PR, which is why it uses
+       // CHANGE_BRANCH and CHANGE_TARGET together
+       DIFFBLUE_TEMP_BRANCH_NAME = "diffblue-temp-for-$CHANGE_BRANCH-into-$CHANGE_TARGET"
+    }
+
+    stages {
+
+        /*
+        This gets the author of the last commit so that we can use it in subsequent `when` statements.
+        We do not want to run most stages when the commit is a bot commit.
+        */
+        stage('Get last commit author and bot name') {
+            steps {
+                script {
+                    env.GIT_AUTHOR = sh (script: 'git log --no-merges -1 --pretty=%cn', returnStdout: true).trim()
+                    env.DIFFBLUE_BOT_NAME = sh (script: '. ./.jenkins/scripts/common.sh; diffblueBotName', returnStdout: true).trim()
+                }
+                sh '''#!/bin/bash
+                    echo "Git author is $GIT_AUTHOR and the Diffblue bot name is $DIFFBLUE_BOT_NAME"
+                '''
+            }
+        }
+
+        /*
+        This cancels any previous builds on this branch unless the commit was made by a bot.
+        This is necessary to prevent two builds from attempting to commit Diffblue tests to the same branch
+        when the older job is out of date.
+        This is completely experimental and required permitting various scripts to run on Jenkins, which may not
+        be desirable.
+        */
+        stage('Cancel previous builds for branch') {
+            when {
+                not { environment name: 'GIT_AUTHOR', value: "$env.DIFFBLUE_BOT_NAME" }
+            }
+            steps {
+                sh '''#!/bin/bash
+                    echo "Cancel previous builds on this PR"
+                '''
+                script {
+                    cancelPreviousBuilds()
+                }
+            }
+        }
+
+        /*
+        Initialises the Diffblue comment so the user knows what is happening on their PR.
+        */
+        stage('Github comment') {
+            when {
+                not { environment name: 'GIT_AUTHOR', value: "$env.DIFFBLUE_BOT_NAME" }
+            }
+            steps {
+                script {
+                    def runExistingDiffblueTestsJob
+                    env.EXISTING_TESTS_STATUS = "IN_PROGRESS"
+                    env.UPDATED_TESTS_STATUS = "IN_PROGRESS"
+                    env.EXISTING_TESTS_BUILD_URL = "null"
+                    env.UPDATED_TESTS_BUILD_URL = "null"
+                }
+                sh '''#!/bin/bash
+                    ./.jenkins/scripts/pipeline/updateComment.sh $TOKEN $CHANGE_ID "$EXISTING_TESTS_STATUS" "$EXISTING_TESTS_BUILD_URL" "$UPDATED_TESTS_STATUS" "$UPDATED_TESTS_BUILD_URL" "$SSH_KEY"
+                '''
+            }
+        }
+
+
+        /*
+        The main block for running user tests and Diffblue analysis. This uses the build artifact
+        from build-project. Each stage will have to use copy artifact to get this.
+        */
+        stage('Run and update tests') {
+            when {
+                not { environment name: 'GIT_AUTHOR', value: "$env.DIFFBLUE_BOT_NAME" }
+            }
+            stages {
+                stage('Kick off test jobs in parallel') {
+                    parallel {
+
+                        /*
+                        The user test logic goes in this stage. In this example, this is a freestyle Jenkins project
+                        called run-user-tests.
+                        */
+                        stage('Run user tests') {
+                            steps {
+                                script {
+                                    build job: 'run-user-tests', parameters: [string(name: 'HEAD_BRANCH', value: "$CHANGE_BRANCH"), string(name: 'BASE_BRANCH', value: "$CHANGE_TARGET")]
+                                }
+                            }
+                        }
+
+
+                        /*
+                        Runs existing Diffblue tests by calling the freestyle Jenkins project existing-diffblue-tests.
+                        This updates the Github comment when the job completes.
+                        */
+                        stage('Run existing Diffblue tests') {
+                            steps {
+                                script {
+                                    modules = sh (script: '. ./.jenkins/scripts/common.sh; modules', returnStdout: true).trim()
+                                    runExistingDiffblueTestsJob = build job: 'existing-diffblue-tests', parameters: [string(name: 'HEAD_BRANCH', value: "$CHANGE_BRANCH"), string(name: 'BASE_BRANCH', value: "$CHANGE_TARGET"), string(name: 'MODULES', value: modules)], propagate: false
+                                }
+                            }
+                            post {
+                                always {
+                                    script {
+                                        env.EXISTING_TESTS_STATUS = runExistingDiffblueTestsJob.getResult().toString()
+                                        env.EXISTING_TESTS_BUILD_URL = runExistingDiffblueTestsJob.getAbsoluteUrl()
+                                    }
+                                    sh '''#!/bin/bash
+                                        ./.jenkins/scripts/pipeline/updateComment.sh $TOKEN $CHANGE_ID "$EXISTING_TESTS_STATUS" "$EXISTING_TESTS_BUILD_URL" "$UPDATED_TESTS_STATUS" "$UPDATED_TESTS_BUILD_URL" "$SSH_KEY"
+                                    '''
+                                }
+                            }
+                        }
+
+
+
+                        /*
+                        Updates the Diffblue tests by calling the freestyle Jenkins project update-diffblue-tests
+                        for each module in parallel. Modules are manually listed for the moment.
+                        This updates the Github comment when the job completes.
+
+                        The tests are pushed to a temporary branch. This must be deleted before tests are updated
+                        and after the job finishes (in cleanup) to keep the repo tidy.
+                        */
+                        stage('Update diffblue tests') {
+                            steps {
+                                sh '''#!/bin/bash
+                                    ./.jenkins/scripts/pipeline/deleteBranch.sh "$SSH_KEY" "$DIFFBLUE_TEMP_BRANCH_NAME"
+                                '''
+                                script {
+                                    parallel_jobs = [:]
+                                    modules = sh (script: '. ./.jenkins/scripts/common.sh; modules', returnStdout: true).trim().split(' ')
+                                    for(entry in modules) {
+                                        def module = entry
+                                        parallel_jobs[module] =
+                                        {
+                                            build job: 'update-diffblue-tests', parameters: [string(name: 'HEAD_BRANCH', value: "$CHANGE_BRANCH"), string(name: 'BASE_BRANCH', value: "$CHANGE_TARGET"), string(name: 'MODULE', value: module), string(name: 'DIFFBLUE_TEMP_BRANCH', value: "$DIFFBLUE_TEMP_BRANCH_NAME")]
+                                        }
+                                    }
+                                    parallel(parallel_jobs)
+                                }
+                            }
+                            post {
+                                success {
+                                    script {
+                                         env.UPDATED_TESTS_STATUS = "COMPLETE"
+                                         env.UPDATED_TESTS_BUILD_URL = "${BUILD_URL}"
+                                    }
+                                    // Tests will only be pushed after the whole job passes, including user tests
+                                }
+                                failure {
+                                    script {
+                                         env.UPDATED_TESTS_STATUS = "FAILURE"
+                                    }
+                                    sh '''#!/bin/bash
+                                        ./.jenkins/scripts/pipeline/updateComment.sh $TOKEN $CHANGE_ID "$EXISTING_TESTS_STATUS" "$EXISTING_TESTS_BUILD_URL" "$UPDATED_TESTS_STATUS" "$BUILD_URL" "$SSH_KEY"
+                                    '''
+                                }
+                            }
+                        }
+
+
+
+                    }
+                }
+            }
+            post {
+                success {
+                    // Push the branch with tests and update the comment
+                    sh '''#!/bin/bash
+                        ./.jenkins/scripts/pipeline/pushBranch.sh "$SSH_KEY" "$DIFFBLUE_TEMP_BRANCH_NAME" $CHANGE_BRANCH
+                        ./.jenkins/scripts/pipeline/updateComment.sh $TOKEN $CHANGE_ID "$EXISTING_TESTS_STATUS" "$EXISTING_TESTS_BUILD_URL" "$UPDATED_TESTS_STATUS" "$UPDATED_TESTS_BUILD_URL" "$SSH_KEY"
+
+                    '''
+                }
+                failure {
+                    sh '''#!/bin/bash
+                        echo "Not pushing any Diffblue tests because something went wrong."
+                    '''
+                }
+                cleanup {
+                    sh '''#!/bin/bash
+                        ./.jenkins/scripts/pipeline/deleteBranch.sh "$SSH_KEY" "$DIFFBLUE_TEMP_BRANCH_NAME"
+                    '''
+                }
+            }
+        }
+    }
+}
