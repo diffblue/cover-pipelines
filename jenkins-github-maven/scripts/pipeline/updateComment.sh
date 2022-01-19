@@ -9,7 +9,8 @@ EXISTING_TESTS_STATUS="$3" # IN_PROGRESS, SUCCESS, FAILURE, UNSTABLE
 EXISTING_TESTS_BUILD_URL="$4" # From Jenkins
 UPDATING_TESTS_STATUS="$5" # IN_PROGRESS, COMPLETE, FAILURE
 UPDATING_TESTS_BUILD_URL="$6" # From Jenkins
-SSH_KEY="$7" # Remote host SSH key for fetching
+ADVISORIES_URL="$7" # From Jenkins
+SSH_KEY="$8" # Remote host SSH key for fetching
 
 # Jenkins runs this script from the workspace, not where the script is stored
 . ./.jenkins/scripts/common.sh
@@ -20,7 +21,7 @@ then
 fi
 
 echoDiffblue "\n\n\n***** updateComment.sh"
-echoDiffblue "arguments (7): TOKEN, $PR_NUMBER, $EXISTING_TESTS_STATUS, $EXISTING_TESTS_BUILD_URL, $UPDATING_TESTS_STATUS, $UPDATING_TESTS_BUILD_URL, SSH_KEY"
+echoDiffblue "arguments (8): TOKEN, $PR_NUMBER, $EXISTING_TESTS_STATUS, $EXISTING_TESTS_BUILD_URL, $UPDATING_TESTS_STATUS, $UPDATING_TESTS_BUILD_URL, $ADVISORIES_URL, SSH_KEY"
 
 # This is used to tag the comment with a unique identifier to find it and delete/update, etc
 DIFFBLUE_UNIQUE_COMMENT_ID="diffblue-update-tests-comment-id"
@@ -38,6 +39,7 @@ COMMENT_EXISTING_DONE_PASSED="<li>:heavy_check_mark: Existing Diffblue tests pas
 COMMENT_UPDATED_DONE_TESTS="<li>:heavy_check_mark: Diffblue has added commits to update the tests. Check that these reflect the intended behaviour of your code change before merging them. <a href=\"${UPDATING_TESTS_BUILD_URL}console/\">Build log</a></li>"
 COMMENT_UPDATED_DONE_NO_TESTS="<li>:heavy_check_mark: Diffblue did not update any tests. <a href=\"${UPDATING_TESTS_BUILD_URL}console/\">Build log</a></li>"
 COMMENT_UPDATED_DONE_FAILURE="<li>:x: Something went wrong. <a href=\"${UPDATING_TESTS_BUILD_URL}console/\">Build log</a></li>"
+COMMENT_ADVISORIES="<li>:warning: There are warning or errors from running Diffblue Cover. See them <a href=\"${ADVISORIES_URL}/\">here</a>.</li>"
 
 GITHUB_ORG="$(githubOrg)"
 GITHUB_REPO="$(githubRepo)"
@@ -119,6 +121,10 @@ else
   exit 1
 fi
 
+if [ "$ADVISORIES_URL" != "null" ]
+then
+  COMMENT_MESSAGE="$COMMENT_MESSAGE$COMMENT_ADVISORIES"
+fi
 
 ####### Comment API calls #######
 

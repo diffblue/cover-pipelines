@@ -92,9 +92,10 @@ pipeline {
                     env.UPDATED_TESTS_STATUS = "IN_PROGRESS"
                     env.EXISTING_TESTS_BUILD_URL = "null"
                     env.UPDATED_TESTS_BUILD_URL = "null"
+                    env.ADVISORIES_URL = "null"
                 }
                 sh '''#!/bin/bash
-                    ./.jenkins/scripts/pipeline/updateComment.sh $TOKEN $CHANGE_ID "$EXISTING_TESTS_STATUS" "$EXISTING_TESTS_BUILD_URL" "$UPDATED_TESTS_STATUS" "$UPDATED_TESTS_BUILD_URL" "$SSH_KEY"
+                    ./.jenkins/scripts/pipeline/updateComment.sh $TOKEN $CHANGE_ID "$EXISTING_TESTS_STATUS" "$EXISTING_TESTS_BUILD_URL" "$UPDATED_TESTS_STATUS" "$UPDATED_TESTS_BUILD_URL" "$ADVISORIES_URL" "$SSH_KEY"
                 '''
             }
         }
@@ -143,7 +144,7 @@ pipeline {
                                         env.EXISTING_TESTS_BUILD_URL = runExistingDiffblueTestsJob.getAbsoluteUrl()
                                     }
                                     sh '''#!/bin/bash
-                                        ./.jenkins/scripts/pipeline/updateComment.sh $TOKEN $CHANGE_ID "$EXISTING_TESTS_STATUS" "$EXISTING_TESTS_BUILD_URL" "$UPDATED_TESTS_STATUS" "$UPDATED_TESTS_BUILD_URL" "$SSH_KEY"
+                                        ./.jenkins/scripts/pipeline/updateComment.sh $TOKEN $CHANGE_ID "$EXISTING_TESTS_STATUS" "$EXISTING_TESTS_BUILD_URL" "$UPDATED_TESTS_STATUS" "$UPDATED_TESTS_BUILD_URL" "$ADVISORIES_URL" "$SSH_KEY"
                                     '''
                                 }
                             }
@@ -178,6 +179,29 @@ pipeline {
                                 }
                             }
                             post {
+                                always {
+                                    script {
+                                        modules = sh (script: '. ./.jenkins/scripts/common.sh; modules', returnStdout: true).trim().split(' ')
+                                        for (entry in modules) {
+                                            def module = entry
+                                            println("This is module ${module}")
+                                            step ([$class: 'CopyArtifact',
+                                            projectName: 'update-diffblue-tests',
+                                            parameters: "MODULE=${module},HEAD_BRANCH=$CHANGE_BRANCH,BASE_BRANCH=$CHANGE_TARGET",
+                                            filter: "**/.diffblue/reports/advisories*.txt",
+                                            target: 'reports']);
+                                        }
+                                    }
+                                    sh '''#!/bin/bash
+                                        ./.jenkins/scripts/pipeline/getErrorsAndWarnings.sh
+                                    '''
+                                    script {
+                                        if (fileExists('reports/all-advisories.txt')) {
+                                            archiveArtifacts artifacts: 'reports/all-advisories.txt', onlyIfSuccessful: false
+                                            env.ADVISORIES_URL = env.BUILD_URL + "artifact/reports/all-advisories.txt"
+                                        }
+                                    }
+                                }
                                 success {
                                     script {
                                          env.UPDATED_TESTS_STATUS = "COMPLETE"
@@ -190,7 +214,7 @@ pipeline {
                                          env.UPDATED_TESTS_STATUS = "FAILURE"
                                     }
                                     sh '''#!/bin/bash
-                                        ./.jenkins/scripts/pipeline/updateComment.sh $TOKEN $CHANGE_ID "$EXISTING_TESTS_STATUS" "$EXISTING_TESTS_BUILD_URL" "$UPDATED_TESTS_STATUS" "$BUILD_URL" "$SSH_KEY"
+                                        ./.jenkins/scripts/pipeline/updateComment.sh $TOKEN $CHANGE_ID "$EXISTING_TESTS_STATUS" "$EXISTING_TESTS_BUILD_URL" "$UPDATED_TESTS_STATUS" "$BUILD_URL" "$ADVISORIES_URL" "$SSH_KEY"
                                     '''
                                 }
                             }
@@ -206,7 +230,7 @@ pipeline {
                     // Push the branch with tests and update the comment
                     sh '''#!/bin/bash
                         ./.jenkins/scripts/pipeline/pushBranch.sh "$SSH_KEY" "$DIFFBLUE_TEMP_BRANCH_NAME" $CHANGE_BRANCH
-                        ./.jenkins/scripts/pipeline/updateComment.sh $TOKEN $CHANGE_ID "$EXISTING_TESTS_STATUS" "$EXISTING_TESTS_BUILD_URL" "$UPDATED_TESTS_STATUS" "$UPDATED_TESTS_BUILD_URL" "$SSH_KEY"
+                        ./.jenkins/scripts/pipeline/updateComment.sh $TOKEN $CHANGE_ID "$EXISTING_TESTS_STATUS" "$EXISTING_TESTS_BUILD_URL" "$UPDATED_TESTS_STATUS" "$UPDATED_TESTS_BUILD_URL" "$ADVISORIES_URL" "$SSH_KEY"
 
                     '''
                 }
@@ -219,6 +243,7 @@ pipeline {
                     sh '''#!/bin/bash
                         ./.jenkins/scripts/pipeline/deleteBranch.sh "$SSH_KEY" "$DIFFBLUE_TEMP_BRANCH_NAME"
                     '''
+                    cleanWs()
                 }
             }
         }

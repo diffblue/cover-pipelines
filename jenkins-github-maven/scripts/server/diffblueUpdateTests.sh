@@ -146,6 +146,18 @@ generateTestsAndCommit() {
   fi
 }
 
+renameAdvisoriesFileForModule() {
+  ls -R .diffblue
+  if [ -f "$MODULE/.diffblue/reports/advisories.txt" ]
+  then
+    echoDiffblue "$MODULE/.diffblue/reports/advisories.txt found, renaming to $MODULE/.diffblue/reports/advisories-for-$MODULE.txt"
+    mv "$MODULE/.diffblue/reports/advisories.txt" "$MODULE/.diffblue/reports/advisories-for-$MODULE.txt"
+  else
+    echoDiffblue "no file found at $MODULE/.diffblue/reports/advisories.txt"
+  fi
+  ls -R .diffblue
+}
+
 pushBranch() {
   BRANCH="$1"
   echoDiffblue "arguments (1): $BRANCH"
@@ -200,6 +212,9 @@ checkSuccess $?
 echoDiffblue "\n\n\n***** Generating tests for $MODULE"
 generateTestsAndCommit "$TEMP_HEAD_BRANCH" "$MODULE" "$TEST_LOCATION" "$TEST_CLASSES_LOCATION" "$PATCH_FILE" "$DCOVER_SCRIPT_LOCATION"
 checkSuccess $?
+
+echoDiffblue "\n\n\n***** Checking for errors and warning and saving as an artifact"
+renameAdvisoriesFileForModule
 
 echoDiffblue "\n\n\n***** Pushing to $TEMP_HEAD_BRANCH for $MODULE"
 pushBranch "$TEMP_HEAD_BRANCH"
