@@ -43,8 +43,8 @@ commandToBuildProject() {
 # These match the name and email of the bot account set up on the repository for Diffblue.
 # It should be a unique user because commits made by this bot affect logic in the Jenkinsfile.
 # The token used to authenticate for Diffblue for git should also be from this user who needs write permissions.
-COMMIT_BOT_NAME="db-ci-platform"
-COMMIT_BOT_EMAIL="db-ci-platform@diffblue.com"
+COMMIT_BOT_NAME="db-ci-pipeline"
+COMMIT_BOT_EMAIL="db-ci-pipeline@diffblue.com"
 diffblueBotName() {
   echo $COMMIT_BOT_NAME
 }
