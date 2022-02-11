@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Copyright 2021-2022 Diffblue Limited. All Rights Reserved.
+# Unpublished proprietary source code.
+# Use is governed by https://docs.diffblue.com/licenses/eula
+
 # dcover location
 RELEASE_URL="$1"
 # project modules - note this must come last as it is var args
