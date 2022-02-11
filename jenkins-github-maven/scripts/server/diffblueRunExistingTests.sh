@@ -1,9 +1,17 @@
 #!/bin/bash
 
+# Copyright 2021-2022 Diffblue Limited. All Rights Reserved.
+# Unpublished proprietary source code.
+# Use is governed by https://docs.diffblue.com/licenses/eula
+
 # dcover location
 RELEASE_URL="$1"
 # project modules - note this must come last as it is var args
 MODULES="$2"
+# Dcover license key
+DCOVER_LICENSE_KEY="$3"
+# PR branch, e.g. feature/some-change
+HEAD_BRANCH="$4"
 
 # Jenkins runs this script from the workspace, not where the script is stored
 . ./.jenkins/scripts/common.sh
@@ -24,6 +32,7 @@ eval "$(commandToBuildProject)"
 
 echoDiffblue "Get dcover"
 getDcover "$RELEASE_URL"
+activateDcover "$DCOVER_LICENSE_KEY"
 checkSuccess $?
 
 echoDiffblue "Remove non-compiling tests in each module"

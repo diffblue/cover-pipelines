@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Copyright 2021-2022 Diffblue Limited. All Rights Reserved.
+# Unpublished proprietary source code.
+# Use is governed by https://docs.diffblue.com/licenses/eula
+
 # This script is responsible for the logic and API interaction for the remote host comment
 # This script example uses the Github API. Similar API calls will need to be substituted for other remote hosts.
 

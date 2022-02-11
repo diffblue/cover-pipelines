@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Copyright 2021-2022 Diffblue Limited. All Rights Reserved.
+# Unpublished proprietary source code.
+# Use is governed by https://docs.diffblue.com/licenses/eula
+
 # dcover location
 RELEASE_URL="$1"
 # PR branch, e.g. feature/some-change
@@ -12,6 +16,8 @@ SSH_KEY=$4
 MODULE="$5"
 # Branch with unique name per PR to store the tests before merging into PR branch
 TEMP_HEAD_BRANCH="$6"
+# Dcover license key
+DCOVER_LICENSE_KEY="$7"
 
 # Jenkins runs this script from the workspace, not where the script is stored
 . ./.jenkins/scripts/common.sh
@@ -67,8 +73,8 @@ makePatch() {
 
   git fetch origin "$BASE_BRANCH" -q
   git fetch origin "$HEAD_BRANCH" -q
-  echoDiffblue "Running: git diff origin/$BASE_BRANCH origin/$HEAD_BRANCH > $PATCH_FILE"
-  git diff "origin/$BASE_BRANCH" "origin/$HEAD_BRANCH" > $PATCH_FILE
+  echoDiffblue "Running: git diff origin/$BASE_BRANCH...origin/$HEAD_BRANCH | tee $PATCH_FILE"
+  git diff "origin/$BASE_BRANCH...origin/$HEAD_BRANCH" | tee "$PATCH_FILE"
   PATCH_FILE="$(realpath $PATCH_FILE)"
   echoDiffblue "makePatch output: $PATCH_FILE"
 }
@@ -187,6 +193,7 @@ checkoutBranchWithFallback "$TEMP_HEAD_BRANCH" "$HEAD_BRANCH"
 checkSuccess $?
 
 getDcover "$RELEASE_URL"
+activateDcover "$DCOVER_LICENSE_KEY"
 checkSuccess $?
 
 # The project is built here to keep this simple. This could potentially be improved by building and exporting artifacts.

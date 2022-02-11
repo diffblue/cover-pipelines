@@ -1,3 +1,6 @@
+<!-- Copyright 2021-2022 Diffblue Limited. All Rights Reserved.
+Unpublished proprietary source code.
+Use is governed by https://docs.diffblue.com/licenses/eula -->
 <?xml version='1.1' encoding='UTF-8'?>
 <project>
   <actions/>
@@ -64,7 +67,7 @@
   <concurrentBuild>true</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>./.jenkins/scripts/server/diffblueUpdateTests.sh &quot;$RELEASE_URL&quot; &quot;${HEAD_BRANCH}&quot; &quot;${BASE_BRANCH}&quot; &quot;$SSH_KEY&quot; &quot;$MODULE&quot; &quot;$DIFFBLUE_TEMP_BRANCH&quot;</command>
+      <command>./.jenkins/scripts/server/diffblueUpdateTests.sh &quot;$RELEASE_URL&quot; &quot;${HEAD_BRANCH}&quot; &quot;${BASE_BRANCH}&quot; &quot;$SSH_KEY&quot; &quot;$MODULE&quot; &quot;$DIFFBLUE_TEMP_BRANCH&quot; &quot;$LICENSE_KEY&quot;</command>
       <configuredLocalRules/>
     </hudson.tasks.Shell>
   </builders>
@@ -106,8 +109,12 @@
           <variable>TOKEN</variable>
         </org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
         <org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
-          <credentialsId>UPDATE_TO_YOUR_RELEASE_URL_CREDENTIALS_ID</credentialsId>
+          <credentialsId>UPDATE_TO_YOUR_DCOVER_LICENSED_BUILD_CREDENTIALS_ID</credentialsId>
           <variable>RELEASE_URL</variable>
+        </org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
+        <org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
+          <credentialsId>DCOVER_LICENSE_KEY</credentialsId>
+          <variable>LICENSE_KEY</variable>
         </org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
       </bindings>
     </org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper>

@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Copyright 2021-2022 Diffblue Limited. All Rights Reserved.
+# Unpublished proprietary source code.
+# Use is governed by https://docs.diffblue.com/licenses/eula
+
 # Configurables
 
 ######## Project #######
@@ -43,8 +47,8 @@ commandToBuildProject() {
 # These match the name and email of the bot account set up on the repository for Diffblue.
 # It should be a unique user because commits made by this bot affect logic in the Jenkinsfile.
 # The token used to authenticate for Diffblue for git should also be from this user who needs write permissions.
-COMMIT_BOT_NAME="db-ci-platform"
-COMMIT_BOT_EMAIL="db-ci-platform@diffblue.com"
+COMMIT_BOT_NAME="db-ci-pipeline"
+COMMIT_BOT_EMAIL="db-ci-pipeline@diffblue.com"
 diffblueBotName() {
   echo $COMMIT_BOT_NAME
 }
@@ -88,13 +92,13 @@ remoteHostAuthentication() {
 # your particular agreement with Diffblue.
 # In you modify this, be sure to modify getDcoverScriptLocation to be correct.
 getDcover() {
-  RELEASE_URL="$1"
+    RELEASE_URL=$1
 
   echoDiffblue "arguments (1): $RELEASE_URL"
 
   if [ -d dcover ]
   then
-  	rm -rf dcover
+    rm -rf dcover
   fi
   mkdir dcover
   cd dcover
@@ -107,6 +111,15 @@ getDcover() {
 # Must coordinate with getDcover, e.g. if the dcover jars are unzipped in dcover, then this is dcover/dcover
 getDcoverScriptLocation() {
   echo "dcover/dcover"
+}
+
+# Depending on your license type and how you get the dcover jars, this may change. This example assumes an enterprise
+# license and that the jars are installed freshly onto each VM each time, and thus need to be activated each time.
+activateDcover() {
+  LICENSE_KEY="$1"
+  DCOVER_SCRIPT_LOCATION="$(getDcoverScriptLocation)"
+
+  "$DCOVER_SCRIPT_LOCATION" activate "$LICENSE_KEY"
 }
 
 
