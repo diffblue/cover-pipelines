@@ -211,7 +211,6 @@ pipeline {
                     sh '''#!/bin/bash
                         ./.jenkins/scripts/pipeline/pushBranch.sh "$SSH_KEY" "$DIFFBLUE_TEMP_BRANCH_NAME" $CHANGE_BRANCH
                         ./.jenkins/scripts/pipeline/updateComment.sh $TOKEN $CHANGE_ID "$EXISTING_TESTS_STATUS" "$EXISTING_TESTS_BUILD_URL" "$UPDATED_TESTS_STATUS" "$UPDATED_TESTS_BUILD_URL" "$SSH_KEY"
-
                     '''
                 }
                 failure {

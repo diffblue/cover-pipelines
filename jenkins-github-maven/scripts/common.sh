@@ -92,13 +92,13 @@ remoteHostAuthentication() {
 # your particular agreement with Diffblue.
 # In you modify this, be sure to modify getDcoverScriptLocation to be correct.
 getDcover() {
-  RELEASE_URL="$1"
+    RELEASE_URL=$1
 
   echoDiffblue "arguments (1): $RELEASE_URL"
 
   if [ -d dcover ]
   then
-  	rm -rf dcover
+    rm -rf dcover
   fi
   mkdir dcover
   cd dcover
