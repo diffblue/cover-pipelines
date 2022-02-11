@@ -73,8 +73,8 @@ makePatch() {
 
   git fetch origin "$BASE_BRANCH" -q
   git fetch origin "$HEAD_BRANCH" -q
-  echoDiffblue "Running: git diff origin/$BASE_BRANCH origin/$HEAD_BRANCH > $PATCH_FILE"
-  git diff "origin/$BASE_BRANCH" "origin/$HEAD_BRANCH" > $PATCH_FILE
+  echoDiffblue "Running: git diff origin/$BASE_BRANCH...origin/$HEAD_BRANCH | tee $PATCH_FILE"
+  git diff "origin/$BASE_BRANCH...origin/$HEAD_BRANCH" | tee "$PATCH_FILE"
   PATCH_FILE="$(realpath $PATCH_FILE)"
   echoDiffblue "makePatch output: $PATCH_FILE"
 }
