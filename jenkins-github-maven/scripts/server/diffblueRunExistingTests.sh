@@ -10,6 +10,8 @@ RELEASE_URL="$1"
 MODULES="$2"
 # Dcover license key
 DCOVER_LICENSE_KEY="$3"
+# PR branch, e.g. feature/some-change
+HEAD_BRANCH="$4"
 
 # Jenkins runs this script from the workspace, not where the script is stored
 . ./.jenkins/scripts/common.sh
