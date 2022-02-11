@@ -60,7 +60,7 @@ Use is governed by https://docs.diffblue.com/licenses/eula -->
               <strategyId>1</strategyId>
             </org.jenkinsci.plugins.github__branch__source.OriginPullRequestDiscoveryTrait>
             <org.jenkinsci.plugins.github__branch__source.SSHCheckoutTrait>
-              <credentialsId>61f85a88-a611-45d0-a587-02b0cda0a215</credentialsId>
+              <credentialsId>UPDATE_TO_YOUR_PRIVATE_SSH_KEY</credentialsId>
             </org.jenkinsci.plugins.github__branch__source.SSHCheckoutTrait>
             <org.jenkinsci.plugins.githubScmTraitNotificationContext.NotificationContextTrait plugin="github-scm-trait-notification-context@1.1">
               <contextLabel>main-job</contextLabel>
