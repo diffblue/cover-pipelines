@@ -4,6 +4,8 @@
 RELEASE_URL="$1"
 # project modules - note this must come last as it is var args
 MODULES="$2"
+# Dcover license key
+DCOVER_LICENSE_KEY="$3"
 
 # Jenkins runs this script from the workspace, not where the script is stored
 . ./.jenkins/scripts/common.sh
@@ -24,6 +26,7 @@ eval "$(commandToBuildProject)"
 
 echoDiffblue "Get dcover"
 getDcover "$RELEASE_URL"
+activateDcover "$DCOVER_LICENSE_KEY"
 checkSuccess $?
 
 echoDiffblue "Remove non-compiling tests in each module"

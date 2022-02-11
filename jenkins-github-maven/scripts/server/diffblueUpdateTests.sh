@@ -12,6 +12,8 @@ SSH_KEY=$4
 MODULE="$5"
 # Branch with unique name per PR to store the tests before merging into PR branch
 TEMP_HEAD_BRANCH="$6"
+# Dcover license key
+DCOVER_LICENSE_KEY="$7"
 
 # Jenkins runs this script from the workspace, not where the script is stored
 . ./.jenkins/scripts/common.sh
@@ -187,6 +189,7 @@ checkoutBranchWithFallback "$TEMP_HEAD_BRANCH" "$HEAD_BRANCH"
 checkSuccess $?
 
 getDcover "$RELEASE_URL"
+activateDcover "$DCOVER_LICENSE_KEY"
 checkSuccess $?
 
 # The project is built here to keep this simple. This could potentially be improved by building and exporting artifacts.

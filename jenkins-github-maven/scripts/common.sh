@@ -109,6 +109,15 @@ getDcoverScriptLocation() {
   echo "dcover/dcover"
 }
 
+# Depending on your license type and how you get the dcover jars, this may change. This example assumes an enterprise
+# license and that the jars are installed freshly onto each VM each time, and thus need to be activated each time.
+activateDcover() {
+  LICENSE_KEY="$1"
+  DCOVER_SCRIPT_LOCATION="$(getDcoverScriptLocation)"
+
+  "$DCOVER_SCRIPT_LOCATION" activate "$LICENSE_KEY"
+}
+
 
 
 ####### dcover configuration #######
