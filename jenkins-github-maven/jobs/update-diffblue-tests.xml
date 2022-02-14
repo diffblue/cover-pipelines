@@ -1,6 +1,3 @@
-<!-- Copyright 2021-2022 Diffblue Limited. All Rights Reserved.
-Unpublished proprietary source code.
-Use is governed by https://docs.diffblue.com/licenses/eula -->
 <?xml version='1.1' encoding='UTF-8'?>
 <project>
   <actions/>
@@ -38,7 +35,7 @@ Use is governed by https://docs.diffblue.com/licenses/eula -->
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
         <url>git@github.com:UPDATE_TO_YOUR_GITHUB_ORG/UPDATE_TO_YOUR_GITHUB_REPO.git</url>
-        <credentialsId>UPDATE_TO_YOUR_SSH_KEY</credentialsId>
+        <credentialsId>UPDATE_TO_YOUR_SSH_CREDENTIALS_ID</credentialsId>
       </hudson.plugins.git.UserRemoteConfig>
     </userRemoteConfigs>
     <branches>
@@ -105,15 +102,15 @@ Use is governed by https://docs.diffblue.com/licenses/eula -->
           <keyFileVariable>SSH_KEY</keyFileVariable>
         </org.jenkinsci.plugins.credentialsbinding.impl.SSHUserPrivateKeyBinding>
         <org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
-          <credentialsId>UPDATE_TO_YOUR_TOKEN_CREDENTIALS_ID</credentialsId>
+          <credentialsId>UPDATE_TO_YOUR_GITHUB_TOKEN</credentialsId>
           <variable>TOKEN</variable>
         </org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
         <org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
-          <credentialsId>UPDATE_TO_YOUR_DCOVER_LICENSED_BUILD_CREDENTIALS_ID</credentialsId>
+          <credentialsId>UPDATE_TO_YOUR_DCOVER_RELEASE_URL_CREDENTIALS_ID</credentialsId>
           <variable>RELEASE_URL</variable>
         </org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
         <org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
-          <credentialsId>DCOVER_LICENSE_KEY</credentialsId>
+          <credentialsId>UPDATE_TO_YOUR_DCOVER_LICENSE_KEY</credentialsId>
           <variable>LICENSE_KEY</variable>
         </org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
       </bindings>

@@ -31,7 +31,7 @@ echoDiffblue "Build project"
 eval "$(commandToBuildProject)"
 
 echoDiffblue "Get dcover"
-getDcover "$RELEASE_URL"
+getDcover "$RELEASE_URL" "$TOKEN" "$HEAD_BRANCH"
 activateDcover "$DCOVER_LICENSE_KEY"
 checkSuccess $?
 

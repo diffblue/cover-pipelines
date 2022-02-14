@@ -192,7 +192,7 @@ checkSuccess $?
 checkoutBranchWithFallback "$TEMP_HEAD_BRANCH" "$HEAD_BRANCH"
 checkSuccess $?
 
-getDcover "$RELEASE_URL"
+getDcover "$RELEASE_URL" "$TOKEN" "$HEAD_BRANCH"
 activateDcover "$DCOVER_LICENSE_KEY"
 checkSuccess $?
 
