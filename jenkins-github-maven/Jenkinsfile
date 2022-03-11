@@ -1,7 +1,3 @@
-// Copyright 2021-2022 Diffblue Limited. All Rights Reserved.
-// Unpublished proprietary source code.
-// Use is governed by https://docs.diffblue.com/licenses/eula
-
 @NonCPS
 def cancelPreviousBuilds() {
     def jobName = env.JOB_NAME
@@ -35,9 +31,9 @@ pipeline {
     */
     environment {
        // Key for Github from credentials set up on Jenkins server
-       SSH_KEY = credentials('SSH_KEY_PIGGYMETRICS')
+       SSH_KEY = credentials('UPDATE_TO_YOUR_SSH_CREDENTIALS_ID')
        // Token for the dedicated Diffblue bot
-       TOKEN = credentials('DB_CI_PIPELINE_TOKEN')
+       TOKEN = credentials('UPDATE_TO_YOUR_TOKEN_CREDENTIALS_ID')
        // Probably no need to modify this, but this should be unique per PR, which is why it uses
        // CHANGE_BRANCH and CHANGE_TARGET together
        DIFFBLUE_TEMP_BRANCH_NAME = "diffblue-temp-for-$CHANGE_BRANCH-into-$CHANGE_TARGET"

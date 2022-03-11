@@ -1,6 +1,3 @@
-<!-- Copyright 2021-2022 Diffblue Limited. All Rights Reserved.
-Unpublished proprietary source code.
-Use is governed by https://docs.diffblue.com/licenses/eula -->
 <?xml version='1.1' encoding='UTF-8'?>
 <project>
   <actions/>
@@ -36,7 +33,7 @@ Use is governed by https://docs.diffblue.com/licenses/eula -->
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
         <url>git@github.com:UPDATE_TO_YOUR_GITHUB_ORG/UPDATE_TO_YOUR_GITHUB_REPO.git</url>
-        <credentialsId>UPDATE_TO_YOUR_SSH_KEY</credentialsId>
+        <credentialsId>UPDATE_TO_YOUR_SSH_CREDENTIALS_ID</credentialsId>
       </hudson.plugins.git.UserRemoteConfig>
     </userRemoteConfigs>
     <branches>
@@ -65,7 +62,7 @@ Use is governed by https://docs.diffblue.com/licenses/eula -->
   <concurrentBuild>true</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>./.jenkins/scripts/server/diffblueRunExistingTests.sh &quot;$RELEASE_URL&quot; &quot;$MODULES&quot; &quot;$LICENSE_KEY&quot;</command>
+      <command>./.jenkins/scripts/server/diffblueRunExistingTests.sh &quot;$RELEASE_URL&quot; &quot;$LICENSE_KEY&quot; &quot;$HEAD_BRANCH&quot; &quot;$MODULES&quot;</command>
       <configuredLocalRules/>
     </hudson.tasks.Shell>
   </builders>
@@ -110,8 +107,12 @@ Use is governed by https://docs.diffblue.com/licenses/eula -->
           <variable>RELEASE_URL</variable>
         </org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
         <org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
-          <credentialsId>DCOVER_LICENSE_KEY</credentialsId>
+          <credentialsId>UPDATE_TO_YOUR_DCOVER_LICENSE_KEY_CREDENTIALS_ID</credentialsId>
           <variable>LICENSE_KEY</variable>
+        </org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
+        <org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
+          <credentialsId>UPDATE_TO_YOUR_TOKEN_CREDENTIALS_ID</credentialsId>
+          <variable>TOKEN</variable>
         </org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
       </bindings>
     </org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper>

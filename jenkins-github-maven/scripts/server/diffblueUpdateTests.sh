@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# Copyright 2021-2022 Diffblue Limited. All Rights Reserved.
-# Unpublished proprietary source code.
-# Use is governed by https://docs.diffblue.com/licenses/eula
-
 # dcover location
 RELEASE_URL="$1"
 # PR branch, e.g. feature/some-change
@@ -17,7 +13,7 @@ MODULE="$5"
 # Branch with unique name per PR to store the tests before merging into PR branch
 TEMP_HEAD_BRANCH="$6"
 # Dcover license key
-DCOVER_LICENSE_KEY="$7"
+UPDATE_TO_YOUR_DCOVER_LICENSE_KEY_CREDENTIALS_ID="$7"
 
 # Jenkins runs this script from the workspace, not where the script is stored
 . ./.jenkins/scripts/common.sh
@@ -36,7 +32,7 @@ VALIDATION_COMMAND="$(commandToRunAllDiffblueTests)"
 echoDiffblue "Patch file location: $PATCH_FILE, Diffblue test location: $TEST_LOCATION, Diffblue test classes location: $TEST_CLASSES_LOCATION, DCover script location: $DCOVER_SCRIPT_LOCATION, Test validation command for dcover: $VALIDATION_COMMAND"
 
 echoDiffblue "Running diffblueUpdateTests.sh"
-echoDiffblue "with arguments (6): dcover url: $RELEASE_URL, head branch: $HEAD_BRANCH, base branch: $BASE_BRANCH, not echoing SSH_KEY arg, module: $MODULE, temp branch for storing tests: $TEMP_HEAD_BRANCH" # don't echo the SSH_KEY
+echoDiffblue "with arguments (7): dcover url: $RELEASE_URL, head branch: $HEAD_BRANCH, base branch: $BASE_BRANCH, not echoing SSH_KEY arg, module: $MODULE, temp branch for storing tests: $TEMP_HEAD_BRANCH, not echoing license key" # don't echo the SSH_KEY or License key
 
 # This deals with the possibility that the branch may have or may have not already been made by another job.
 checkoutBranchWithFallback() {
@@ -193,7 +189,7 @@ checkoutBranchWithFallback "$TEMP_HEAD_BRANCH" "$HEAD_BRANCH"
 checkSuccess $?
 
 getDcover "$RELEASE_URL"
-activateDcover "$DCOVER_LICENSE_KEY"
+activateDcover "$UPDATE_TO_YOUR_DCOVER_LICENSE_KEY_CREDENTIALS_ID"
 checkSuccess $?
 
 # The project is built here to keep this simple. This could potentially be improved by building and exporting artifacts.

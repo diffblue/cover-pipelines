@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# Copyright 2021-2022 Diffblue Limited. All Rights Reserved.
-# Unpublished proprietary source code.
-# Use is governed by https://docs.diffblue.com/licenses/eula
-
 # Pushes commits from HEAD_BRANCH into BASE_BRANCH. This assumes that HEAD_BRANCH is based on BASE_BRANCH
 # This is used to cherry pick new commits from the temporary branch to the PR branch
 
