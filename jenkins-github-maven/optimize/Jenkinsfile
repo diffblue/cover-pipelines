@@ -1,0 +1,39 @@
+pipeline {
+    agent any
+
+    /*
+    Modify these as required
+    */
+    environment {
+        // get url for downloading Diffblue Cover from credentials set up on Jenkins server
+       RELEASE_URL = credentials('DCOVER_LICENSED_BUILD')
+       // get license key for Diffblue Cover from credentials set up on Jenkins server
+       LICENSE_KEY = credentials('DCOVER_LICENSE_KEY')
+    }
+
+    stages {
+        /*
+        Example stage where tests are run with Diffblue Cover Optimize
+        */
+        stage('Run tests with Diffblue Cover Optimize') {
+            steps {
+                sh '''#!/bin/bash
+                    # Load script
+                    . ./.jenkins/scripts/common.sh
+
+                    # Get and activate dcover, export required variable to point to dcover script location
+                    getDcover "$RELEASE_URL"
+                    activateDcover "$LICENSE_KEY"
+                    export DIFFBLUE_COMMAND="$(realpath $(getDcoverScriptLocation))"
+
+                    # Generate the patch file, export required variable to point to patch file
+                    export DIFFBLUE_PATCH="$(realpath $(patchFile))"
+                    git diff origin/jenkins/base-branch-optimize > $DIFFBLUE_PATCH
+
+                    # Call mvn test or mvn verify, only tests affected by the changes in the patch file are run now
+                    mvn test
+                '''
+            }
+        }
+    }
+}

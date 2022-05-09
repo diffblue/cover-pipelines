@@ -86,7 +86,7 @@ remoteHostAuthentication() {
 # the location of the dcover script. In this example, they are unzipped into the directory dcover.
 # This should also set up the license if required, but that is not done here as it depends your
 # your particular agreement with Diffblue.
-# In you modify this, be sure to modify getDcoverScriptLocation to be correct.
+# If you modify this, be sure to modify getDcoverScriptLocation to be correct.
 getDcover() {
     RELEASE_URL=$1
 
